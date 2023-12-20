@@ -1,0 +1,56 @@
+---
+- hosts: localhost
+  become: yes
+  tasks:
+    - name: "Actualizar paquetes"
+      apt:
+        update_cache: yes
+        upgrade: yes
+    - name: "Instalar actualizaciones de seguridad"
+      apt:
+        name: "*"
+        state: latest
+        update_cache: yes
+    - name: "Desactivar inicio de sesión como root"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "PermitRootLogin no"
+    - name: "Cambiar puerto SSH"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "Port 2222"
+    - name: "Habilitar autenticación basada en clave para SSH"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "PasswordAuthentication no"
+    - name: "Instalar Fail2Ban"
+      apt:
+        name: fail2ban
+        state: present
+    - name: "Recargar Fail2Ban"
+      service:
+        name: fail2ban
+        state: restarted
+    - name: "Instalar y configurar UFW (Uncomplicated Firewall)"
+      apt:
+        name: ufw
+        state: present
+    - name: "Permitir SSH en UFW"
+      ufw:
+        rule: allow
+        port: 2222
+    - name: "Habilitar UFW"
+      ufw:
+        state: enabled
+    - name: "Instalar y configurar ModSecurity para Apache"
+      apt:
+        name: libapache2-mod-security2
+        state: present
+      notify:
+        - Reiniciar Apache
+  handlers:
+    - name: Reiniciar Apache
+      service:
+        name: apache2
+        state: restarted
+...
